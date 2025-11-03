@@ -1,0 +1,108 @@
+# Cinética de Crecimiento de Monod
+# Modelo: μ = μmax * S / (Ks + S)
+# donde:
+#   μ = tasa específica de crecimiento (h⁻¹)
+#   μmax = tasa específica de crecimiento máxima (h⁻¹)
+#   S = concentración de sustrato (g/L)
+#   Ks = constante de saturación (g/L)
+
+# Datos de ejemplo
+df <- data.frame(
+  S = c(0.10,
+        0.25,
+        0.50,
+        0.75,
+        1.00,
+        2.00,
+        3.00,
+        5.00,
+        8.00,
+        10.00),    # Concentración de sustrato (g/L)
+  mu = c(0.08,
+         0.15,
+         0.23,
+         0.28,
+         0.32,
+         0.42,
+         0.46,
+         0.52,
+         0.54,
+         0.55)     # Tasa específica de crecimiento (h⁻¹)
+)
+
+# Inicialización: valores para que el algoritmo pueda comenzar
+mu_max_start <- max(df$mu)                               # ≈ meseta de la curva, aproximación a μmax
+Ks_start <- df$S[which.min(abs(df$mu - mu_max_start/2))]  # Concentración S a μmax/2
+
+# Ajuste de curva con el modelo de Monod
+fit <- nls(
+  mu ~ (mu_max * S) / (Ks + S),    # Modelo de Monod, función de S
+  data  = df,
+  start = list(mu_max = mu_max_start, Ks = Ks_start)
+)
+
+summary(fit)    # Resumen general
+coef(fit)       # Estimaciones de parámetros
+confint(fit)    # Intervalos de confianza
+
+# Visualizaciones
+plot(df$S, df$mu,
+     pch = 16,
+     xlab = "Concentración de Sustrato [S] (g/L)",
+     ylab = "Tasa Específica de Crecimiento μ (h⁻¹)",
+     main = "Cinética de Crecimiento de Monod")
+
+# Generar curva ajustada
+Sgrid <- seq(0, max(df$S), length.out = 200)
+lines(Sgrid,
+      with(as.list(coef(fit)), (mu_max * Sgrid)/(Ks + Sgrid)),
+      col = "blue", lwd = 2)
+
+# Agregar línea horizontal en μmax
+abline(h = coef(fit)["mu_max"], lty = 2, col = "red")
+
+# Agregar línea vertical en Ks
+abline(v = coef(fit)["Ks"], lty = 2, col = "green")
+
+# Leyenda
+legend("bottomright",
+       legend = c("Datos experimentales", "Modelo ajustado",
+                  paste("μmax =", round(coef(fit)["mu_max"], 3), "h⁻¹"),
+                  paste("Ks =", round(coef(fit)["Ks"], 3), "g/L")),
+       col = c("black", "blue", "red", "green"),
+       pch = c(16, NA, NA, NA),
+       lty = c(NA, 1, 2, 2))
+
+# Gráfica de residuos
+res <- resid(fit)
+fitv <- fitted(fit)
+
+plot(fitv, res,
+     pch = 16,
+     xlab = "Valores ajustados",
+     ylab = "Residuos",
+     main = "Gráfica de Residuos")
+abline(h = 0, lty = 2, col = "red")
+
+# Gráfica Q-Q para verificar normalidad de residuos
+qqnorm(res, pch = 16)
+qqline(res, col = "red", lwd = 2)
+
+# Cálculo de pseudo-R²
+y    <- df$mu           # valores observados
+yhat <- fitted(fit)
+
+SSE  <- sum(res^2)
+SST  <- sum((y - mean(y))^2)
+
+R2   <- 1 - SSE/SST
+
+cat("\n=== RESULTADOS DEL AJUSTE ===\n")
+cat("μmax: ", round(coef(fit)["mu_max"], 4), "h⁻¹\n")
+cat("Ks:   ", round(coef(fit)["Ks"], 4), "g/L\n")
+cat("R²:   ", round(R2, 4), "\n")
+
+# Interpretación de Ks:
+# Ks representa la afinidad del microorganismo por el sustrato
+# Un Ks bajo indica alta afinidad (el microorganismo crece bien incluso a bajas [S])
+# Un Ks alto indica baja afinidad (requiere más sustrato para crecer eficientemente)

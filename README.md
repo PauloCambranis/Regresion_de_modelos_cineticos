@@ -12,8 +12,9 @@ datos <- c(0.1, # la lista se declara con c()
 
 Hay varios scripts en este repositorio para diversos modelos, incluyendo:
 - Cinética enzimática clásica de Michaelis-Menten
-- Cinética enzimática con inhibición
-- Cinética de Monod
+- Cinética enzimática con inhibición por sustrato
+- Cinética de crecimiento microbiano de Monod
+- Cinética de crecimiento de Monod y Tessier (comparación)
 - Regresión Lineal
 
 Más modelos pronto!
